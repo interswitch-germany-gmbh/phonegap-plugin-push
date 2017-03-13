@@ -8,24 +8,30 @@
     Windows uses Microsoft WNS Notifications.
 	</description>
   <license>MIT</license>
+
   <js-module src="www/push.js" name="PushNotification">
     <clobbers target="PushNotification"/>
   </js-module>
+
   <engines>
     <engine name="cordova" version=">=6.4.0"/>
     <engine name="cordova-android" version=">=6.0.0"/>
     <engine name="cordova-ios" version=">=4.3.0"/>
   </engines>
+
   <preference name="SENDER_ID" default="85075801930"/>
+
   <platform name="android">
     <config-file target="res/xml/config.xml" parent="/*">
       <feature name="PushNotification">
         <param name="android-package" value="com.adobe.phonegap.push.PushPlugin"/>
       </feature>
     </config-file>
+
     <config-file target="res/values/strings.xml" parent="/resources">
       <string name="google_app_id" translatable="false">$SENDER_ID</string>
     </config-file>
+
     <config-file target="AndroidManifest.xml" parent="/manifest">
       <uses-permission android:name="android.permission.INTERNET"/>
       <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -37,6 +43,7 @@
       <permission android:name="${applicationId}.permission.C2D_MESSAGE" android:protectionLevel="signature"/>
       <permission android:name="${applicationId}.permission.PushHandlerActivity" android:protectionLevel="signature"/>
     </config-file>
+
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
       <activity android:name="com.adobe.phonegap.push.PushHandlerActivity" android:exported="true" android:permission="${applicationId}.permission.PushHandlerActivity"/>
       <receiver android:name="com.adobe.phonegap.push.BackgroundActionButtonHandler"/>
@@ -58,6 +65,7 @@
       </service>
       <service android:name="com.adobe.phonegap.push.RegistrationIntentService" android:exported="false"/>
     </config-file>
+    
     <framework src="push.gradle" custom="true" type="gradleReference"/>
     <framework src="com.android.support:support-v13:23+"/>
     <framework src="com.google.android.gms:play-services-gcm:10.2+"/>
@@ -70,54 +78,5 @@
     <source-file src="src/android/com/adobe/phonegap/push/RegistrationIntentService.java" target-dir="src/com/adobe/phonegap/push/"/>
     <source-file src="src/android/com/adobe/phonegap/push/PermissionUtils.java" target-dir="src/com/adobe/phonegap/push/"/>
     <source-file src="src/android/com/adobe/phonegap/push/BackgroundActionButtonHandler.java" target-dir="src/com/adobe/phonegap/push/"/>
-  </platform>
-  <platform name="browser">
-    <js-module src="www/browser/push.js" name="BrowserPush">
-      <clobbers target="PushNotification"/>
-    </js-module>
-    <asset src="src/browser/ServiceWorker.js" target="ServiceWorker.js"/>
-    <asset src="src/browser/manifest.json" target="manifest.json"/>
-  </platform>
-  <platform name="ios">
-    <config-file target="config.xml" parent="/*">
-      <feature name="PushNotification">
-        <param name="ios-package" value="PushPlugin"/>
-      </feature>
-    </config-file>
-    <config-file target="*-Info.plist" parent="UIBackgroundModes">
-      <array>
-        <string>remote-notification</string>
-      </array>
-    </config-file>
-    <config-file target="*-Info.plist" parent="GCM_SENDER_ID">
-      <string>$SENDER_ID</string>
-    </config-file>
-    <config-file target="*-Info.plist" parent="IS_GCM_ENABLED">
-      <true/>
-    </config-file>
-    <config-file target="*-Debug.plist" parent="aps-environment">
-      <string>development</string>
-    </config-file>
-    <config-file target="*-Release.plist" parent="aps-environment">
-      <string>production</string>
-    </config-file>
-    <source-file src="src/ios/AppDelegate+notification.m"/>
-    <source-file src="src/ios/PushPlugin.m"/>
-    <header-file src="src/ios/AppDelegate+notification.h"/>
-    <header-file src="src/ios/PushPlugin.h"/>
-    <framework src="AddressBook.framework"/>
-    <framework src="libsqlite3.tbd"/>
-    <framework src="libz.tbd"/>
-    <framework src="GoogleCloudMessaging" type="podspec" spec="~> 1.2.0"/>
-    <framework src="GGLInstanceID" type="podspec" spec="~> 1.2.1"/>
-  </platform>
-  <platform name="windows">
-    <hook type="after_plugin_install" src="hooks/windows/setToastCapable.js"/>
-    <js-module src="src/windows/PushPluginProxy.js" name="PushPlugin">
-      <runs/>
-    </js-module>
-    <config-file target="config.xml" parent="/*">
-      <preference name="WindowsToastCapable" value="true"/>
-    </config-file>
   </platform>
 </plugin>
