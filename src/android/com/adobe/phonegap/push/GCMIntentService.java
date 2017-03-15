@@ -19,6 +19,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Paint;
 import android.graphics.Canvas;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -40,8 +41,12 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Random;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 @SuppressLint("NewApi")
 public class GCMIntentService extends GcmListenerService implements PushConstants {
@@ -104,6 +109,54 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                 extras.putBoolean(COLDSTART, PushPlugin.isActive());
 
                 showNotificationIfPossible(applicationContext, extras);
+
+
+                // Send receipt to the RTCP
+                try {
+                    Hashtable<String, String> requestData = new Hashtable<String, String>();
+
+                    String url = "https://rtcp-staging.vanso.com/api/read_receipt/opened?";
+
+                    String hardware_id = "77ce30392a35d711";
+                    String push_id = "3539dd9eeea58282";
+                    String push_secret = "7a5691fa19f1a1c983eaf27b1443ccdc";
+                    long time = System.currentTimeMillis();
+
+                    String hashParams = "hardware_id=" + hardware_id + "&";
+                    hashParams += "push_id=" + push_id + "&";
+                    hashParams += "time=" + time + "&";
+                    hashParams += "type=android";
+
+                    String hashUrl = url + hashParams;
+                    String urlParam = hashUrl + time;
+
+                    // signatureToken
+                    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+                    SecretKeySpec keySpec = new SecretKeySpec(push_secret.getBytes(), "HmacSHA256");
+                    sha256_HMAC.init(keySpec);
+                    byte[] encoded = sha256_HMAC.doFinal(urlParam.getBytes());
+                    String signatureToken = encoded.toString();
+
+                    Log.e("Sending receipt", hashUrl);
+
+
+
+
+
+
+
+
+                    // NetworkRequest request = new NetworkRequest.Builder(NetworkRequest.MethodType.POST, hashUrl, 10000)
+                    //         .addHeader("AUTH-APP-ID", hardware_id)
+                    //         .addHeader("AUTH-TIMESTAMP", time + "")
+                    //         .addHeader("AUTH-SIGNATURE", signatureToken)
+                    //         .setContentType(NetworkRequest.ContentType.FORM_ENCODED)
+                    //         .isRequestJsonFromModel(false)
+                    //         .build();
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "ERROR: " + e.getMessage());
+                }
+
             }
         }
     }
