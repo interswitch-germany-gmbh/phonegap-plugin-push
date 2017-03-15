@@ -137,7 +137,7 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     byte[] encoded = sha256_HMAC.doFinal(urlParam.getBytes());
                     String signatureToken = encoded.toString();
 
-                    Log.e("Sending receipt", hashUrl);
+                    Log.e(LOG_TAG + ": Sending receipt", hashUrl);
 
 
 
