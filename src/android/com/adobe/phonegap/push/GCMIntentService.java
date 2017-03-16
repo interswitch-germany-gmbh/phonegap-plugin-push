@@ -35,18 +35,27 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Set;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 @SuppressLint("NewApi")
 public class GCMIntentService extends GcmListenerService implements PushConstants {
@@ -115,50 +124,135 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                 try {
                     Hashtable<String, String> requestData = new Hashtable<String, String>();
 
-                    String url = "https://rtcp-staging.vanso.com/api/read_receipt/opened?";
+                    String key_hardware = "hardware_id";
+                    String key_app = "app_id";
+                    String key_secret = "secret";
+                    String key_push = "push_id";
+                    String key_url = "url_receipt";
+                    String key_time = "time";
+                    String key_type = "type";
 
-                    String hardware_id = "77ce30392a35d711";
-                    String push_id = "3539dd9eeea58282";
-                    String push_secret = "7a5691fa19f1a1c983eaf27b1443ccdc";
+                    // load data from preferences
+                    SharedPreferences preferences = getSharedPreferences("APP_PUSH_DATA", 0);
+
+                    // getting push id
+                    String app_data = extras.getString("app_data");
+                    JSONObject joAppData = new JSONObject(app_data);
+
+                    String push_id = joAppData.getString(key_push);
+                    Log.i(LOG_TAG, key_push + ": " + push_id);
+
+                    String push_secret = preferences.getString(key_secret, "no secret yet");
                     long time = System.currentTimeMillis();
+                    String urlReceipt = preferences.getString(key_url, "nor url yet");
 
-                    String hashParams = "hardware_id=" + hardware_id + "&";
-                    hashParams += "push_id=" + push_id + "&";
-                    hashParams += "time=" + time + "&";
-                    hashParams += "type=android";
-
-                    String hashUrl = url + hashParams;
-                    String urlParam = hashUrl + time;
+                    requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
+                    requestData.put(key_push, push_id);
+                    requestData.put(key_time, time + "");
+                    requestData.put(key_type, "received");
 
                     // signatureToken
+                    String hashParams = "hardware_id=" + requestData.get(key_hardware) + "&";
+                    hashParams += "push_id=" + push_id + "&";
+                    hashParams += "time=" + time + "&";
+                    hashParams += "type=" + requestData.get(key_type);
+
+                    String hashUrl = urlReceipt + hashParams;
+                    String urlParam = hashUrl + time;
+
                     Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
                     SecretKeySpec keySpec = new SecretKeySpec(push_secret.getBytes(), "HmacSHA256");
                     sha256_HMAC.init(keySpec);
                     byte[] encoded = sha256_HMAC.doFinal(urlParam.getBytes());
                     String signatureToken = encoded.toString();
 
-                    Log.e(LOG_TAG + ": Sending receipt", hashUrl);
+                    String charset = "UTF-8";
+                    URL url = new URL(urlReceipt.replace("?", ""));
+                    JSONObject result = null;
 
+                    HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+                    urlConnection.setConnectTimeout(15000);
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setChunkedStreamingMode(0);
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=\"" + charset + "\"");
+                    urlConnection.setRequestProperty("AUTH-APP-ID", preferences.getString(key_app, "no app id yet"));
+                    urlConnection.setRequestProperty("AUTH-TIMESTAMP", requestData.get(key_time));
+                    urlConnection.setRequestProperty("AUTH-SIGNATURE", signatureToken);
 
+                    OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
+                    writeStream(out, requestData);
+                    out.flush();
+                    out.close();
 
-
-
-
-
-
-                    // NetworkRequest request = new NetworkRequest.Builder(NetworkRequest.MethodType.POST, hashUrl, 10000)
-                    //         .addHeader("AUTH-APP-ID", hardware_id)
-                    //         .addHeader("AUTH-TIMESTAMP", time + "")
-                    //         .addHeader("AUTH-SIGNATURE", signatureToken)
-                    //         .setContentType(NetworkRequest.ContentType.FORM_ENCODED)
-                    //         .isRequestJsonFromModel(false)
-                    //         .build();
+                    try {
+                        if (urlConnection.getResponseCode() == 200 || urlConnection.getResponseCode() == 201) {
+                            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                            result = new JSONObject(getStringFromInputStream(in));
+                            Log.i(LOG_TAG, "Sending Receipt: result: " + result);
+                        } else {
+                            Log.e(LOG_TAG, "Sending Receipt: request error: " + urlConnection.getResponseCode());
+                        }
+                    } catch(Exception e) {
+                        InputStream error =  new BufferedInputStream(urlConnection.getErrorStream());
+                        Log.e(LOG_TAG, "Sending Receipt: errorStream: " + getStringFromInputStream(error) + ", exception: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    finally {
+                        urlConnection.disconnect();
+                    }
                 } catch (Exception e) {
-                    Log.e(LOG_TAG, "ERROR: " + e.getMessage());
+                    Log.e(LOG_TAG, "Sending Receipt: error: " + e.getMessage());
                 }
 
             }
         }
+    }
+
+    private void writeStream(OutputStream out, Hashtable<String, String> requestData) {
+        String body = "";
+        Set<String> keys = requestData.keySet();
+        for(String key: keys) {
+            body += key + "=" + requestData.get(key) + "&";
+        }
+        body = body.substring(0, body.length() - 1);
+
+        try {
+            out.write(body.getBytes());
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "ERROR: writeStream: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+    public String getStringFromInputStream(InputStream is) {
+
+        BufferedReader br = null;
+        StringBuilder sb = new StringBuilder();
+
+        String line;
+        try {
+
+            br = new BufferedReader(new InputStreamReader(is));
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "ERROR: getStringFromInputStream: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return sb.toString().trim();
     }
 
     /*
