@@ -140,7 +140,6 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     JSONObject joAppData = new JSONObject(app_data);
 
                     String push_id = joAppData.getString(key_push);
-                    Log.i(LOG_TAG, key_push + ": " + push_id);
 
                     String push_secret = preferences.getString(key_secret, "no secret yet");
                     long time = System.currentTimeMillis();
@@ -175,10 +174,16 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     urlConnection.setDoOutput(true);
                     urlConnection.setChunkedStreamingMode(0);
                     urlConnection.setRequestMethod("POST");
-                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=\"" + charset + "\"");
+                    //urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=\"" + charset + "\"");
                     urlConnection.setRequestProperty("AUTH-APP-ID", preferences.getString(key_app, "no app id yet"));
                     urlConnection.setRequestProperty("AUTH-TIMESTAMP", requestData.get(key_time));
                     urlConnection.setRequestProperty("AUTH-SIGNATURE", signatureToken);
+
+                    Log.i(LOG_TAG, "Sending receipt to url: " + urlReceipt);
+                    Log.i(LOG_TAG, "AUTH-APP-ID: " + preferences.getString(key_app, "no app id yet"));
+                    Log.i(LOG_TAG, "AUTH-TIMESTAMP: " + requestData.get(key_time));
+                    Log.i(LOG_TAG, "AUTH-SIGNATURE: " + signatureToken);
+                    Log.i(LOG_TAG, "requestData: " + requestData);
 
                     OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
                     writeStream(out, requestData);
