@@ -19,7 +19,8 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Paint;
 import android.graphics.Canvas;
-import android.net.NetworkRequest;
+import android.icu.text.DateFormat;
+import android.icu.text.SimpleDateFormat;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -44,8 +45,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -55,7 +56,6 @@ import java.util.Set;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLPeerUnverifiedException;
 
 @SuppressLint("NewApi")
 public class GCMIntentService extends GcmListenerService implements PushConstants {
@@ -142,22 +142,24 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     String push_id = joAppData.getString(key_push);
 
                     String push_secret = preferences.getString(key_secret, "no secret yet");
-                    long time = System.currentTimeMillis();
+                    DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                    df.setTimeZone(android.icu.util.TimeZone.getTimeZone("utc"));
+
                     String urlReceipt = preferences.getString(key_url, "nor url yet");
 
                     requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
                     requestData.put(key_push, push_id);
-                    requestData.put(key_time, time + "");
+                    requestData.put(key_time, df.format(new Date(System.currentTimeMillis())) + "Z");
                     requestData.put(key_type, "received");
 
                     // signatureToken
                     String hashParams = "hardware_id=" + requestData.get(key_hardware) + "&";
                     hashParams += "push_id=" + push_id + "&";
-                    hashParams += "time=" + time + "&";
+                    hashParams += "time=" + requestData.get(key_time) + "&";
                     hashParams += "type=" + requestData.get(key_type);
 
                     String hashUrl = urlReceipt + hashParams;
-                    String urlParam = hashUrl + time;
+                    String urlParam = hashUrl + requestData.get(key_time);
 
                     Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
                     SecretKeySpec keySpec = new SecretKeySpec(push_secret.getBytes(), "HmacSHA256");
@@ -179,11 +181,11 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     urlConnection.setRequestProperty("AUTH-TIMESTAMP", requestData.get(key_time));
                     urlConnection.setRequestProperty("AUTH-SIGNATURE", signatureToken);
 
-                    Log.i(LOG_TAG, "Sending receipt to url: " + urlReceipt);
-                    Log.i(LOG_TAG, "AUTH-APP-ID: " + preferences.getString(key_app, "no app id yet"));
-                    Log.i(LOG_TAG, "AUTH-TIMESTAMP: " + requestData.get(key_time));
-                    Log.i(LOG_TAG, "AUTH-SIGNATURE: " + signatureToken);
-                    Log.i(LOG_TAG, "requestData: " + requestData);
+//                    Log.i(LOG_TAG, "Sending receipt to url: " + urlReceipt);
+//                    Log.i(LOG_TAG, "AUTH-APP-ID: " + preferences.getString(key_app, "no app id yet"));
+//                    Log.i(LOG_TAG, "AUTH-TIMESTAMP: " + requestData.get(key_time));
+//                    Log.i(LOG_TAG, "AUTH-SIGNATURE: " + signatureToken);
+//                    Log.i(LOG_TAG, "requestData: " + requestData);
 
                     OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
                     writeStream(out, requestData);
