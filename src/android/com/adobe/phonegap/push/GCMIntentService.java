@@ -19,8 +19,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Paint;
 import android.graphics.Canvas;
-import android.icu.text.DateFormat;
-import android.icu.text.SimpleDateFormat;
+import java.text.SimpleDateFormat;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -142,14 +141,14 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     String push_id = joAppData.getString(key_push);
 
                     String push_secret = preferences.getString(key_secret, "no secret yet");
-                    DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-                    df.setTimeZone(android.icu.util.TimeZone.getTimeZone("utc"));
+                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                    df.setTimeZone(java.util.TimeZone.getTimeZone("utc"));
 
                     String urlReceipt = preferences.getString(key_url, "nor url yet");
 
                     requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
                     requestData.put(key_push, push_id);
-                    requestData.put(key_time, df.format(new Date(System.currentTimeMillis())) + "Z");
+                    requestData.put(key_time, df.format(new Date(System.currentTimeMillis())));
                     requestData.put(key_type, "received");
 
                     // signatureToken
