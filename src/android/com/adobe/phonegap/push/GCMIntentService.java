@@ -19,6 +19,10 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Paint;
 import android.graphics.Canvas;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import android.net.Uri;
 import android.os.Bundle;
@@ -62,6 +66,8 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
     private static final String LOG_TAG = "PushPlugin_GCMIntentService";
     private static HashMap<Integer, ArrayList<String>> messageMap = new HashMap<Integer, ArrayList<String>>();
 
+    private static final String FILENAME = "last_pushes";
+
     public void setNotification(int notId, String message){
         ArrayList<String> messageList = messageMap.get(notId);
         if(messageList == null) {
@@ -91,20 +97,29 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
 
             extras = normalizeExtras(applicationContext, extras, messageKey, titleKey);
 
+            String state = "received";
+            String key_time = "time";
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            df.setTimeZone(java.util.TimeZone.getTimeZone("utc"));
+            Hashtable<String, String> requestData = new Hashtable<String, String>();
+            requestData.put(key_time, df.format(new Date(System.currentTimeMillis())));
+
             if (clearBadge) {
                 PushPlugin.setApplicationIconBadgeNumber(getApplicationContext(), 0);
             }
 
             // if we are in the foreground and forceShow is `false` only send data
             if (!forceShow && PushPlugin.isInForeground()) {
-                Log.d(LOG_TAG, "foreground");
+                Log.d(LOG_TAG, "<<< foreground >>>");
+                state = "read";
                 extras.putBoolean(FOREGROUND, true);
                 extras.putBoolean(COLDSTART, false);
                 PushPlugin.sendExtras(extras);
             }
             // if we are in the foreground and forceShow is `true`, force show the notification if the data has at least a message or title
             else if (forceShow && PushPlugin.isInForeground()) {
-                Log.d(LOG_TAG, "foreground force");
+                Log.d(LOG_TAG, "<<< foreground force >>>");
+                state = "read";
                 extras.putBoolean(FOREGROUND, true);
                 extras.putBoolean(COLDSTART, false);
 
@@ -112,7 +127,7 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
             }
             // if we are not in the foreground always send notification if the data has at least a message or title
             else {
-                Log.d(LOG_TAG, "background");
+                Log.d(LOG_TAG, "<<< background >>>");
                 extras.putBoolean(FOREGROUND, false);
                 extras.putBoolean(COLDSTART, PushPlugin.isActive());
 
@@ -121,14 +136,13 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
 
                 // Send receipt to the RTCP
                 try {
-                    Hashtable<String, String> requestData = new Hashtable<String, String>();
+
 
                     String key_hardware = "hardware_id";
                     String key_app = "app_id";
                     String key_secret = "secret";
                     String key_push = "push_id";
                     String key_url = "url_receipt";
-                    String key_time = "time";
                     String key_type = "type";
 
                     // load data from preferences
@@ -138,17 +152,16 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     String app_data = extras.getString("app_data");
                     JSONObject joAppData = new JSONObject(app_data);
 
+                    Log.d(LOG_TAG, "extras: " + extras);
+
                     String push_id = joAppData.getString(key_push);
 
                     String push_secret = preferences.getString(key_secret, "no secret yet");
-                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-                    df.setTimeZone(java.util.TimeZone.getTimeZone("utc"));
-
                     String urlReceipt = preferences.getString(key_url, "nor url yet");
 
                     requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
                     requestData.put(key_push, push_id);
-                    requestData.put(key_time, df.format(new Date(System.currentTimeMillis())));
+
                     requestData.put(key_type, "received");
 
                     // signatureToken
@@ -180,12 +193,6 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     urlConnection.setRequestProperty("AUTH-TIMESTAMP", requestData.get(key_time));
                     urlConnection.setRequestProperty("AUTH-SIGNATURE", signatureToken);
 
-//                    Log.i(LOG_TAG, "Sending receipt to url: " + urlReceipt);
-//                    Log.i(LOG_TAG, "AUTH-APP-ID: " + preferences.getString(key_app, "no app id yet"));
-//                    Log.i(LOG_TAG, "AUTH-TIMESTAMP: " + requestData.get(key_time));
-//                    Log.i(LOG_TAG, "AUTH-SIGNATURE: " + signatureToken);
-//                    Log.i(LOG_TAG, "requestData: " + requestData);
-
                     OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
                     writeStream(out, requestData);
                     out.flush();
@@ -199,20 +206,96 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                         } else {
                             Log.e(LOG_TAG, "Sending Receipt: request error: " + urlConnection.getResponseCode());
                         }
-                    } catch(Exception e) {
-                        InputStream error =  new BufferedInputStream(urlConnection.getErrorStream());
+                    } catch (Exception e) {
+                        InputStream error = new BufferedInputStream(urlConnection.getErrorStream());
                         Log.e(LOG_TAG, "Sending Receipt: errorStream: " + getStringFromInputStream(error) + ", exception: " + e.getMessage());
                         e.printStackTrace();
-                    }
-                    finally {
+                    } finally {
                         urlConnection.disconnect();
                     }
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Sending Receipt: error: " + e.getMessage());
                 }
+            }
 
+            // read saved pushes
+            JSONArray saved_pushes = readPushes(applicationContext);
+            while (saved_pushes.length() >= 10) {
+                saved_pushes.remove(0);
+            }
+
+            // save the push data
+            String push_data = "{date:\""+ requestData.get(key_time) + "\",status:" + state + ",message:\"" + extras.getString("message") + "\",app_data:" + extras.getString("app_data") + "}";
+            try {
+                JSONObject push = new JSONObject(push_data);
+                saved_pushes.put(push);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            Log.d(LOG_TAG, "saved_pushes: " + saved_pushes);
+            savePushes(saved_pushes, applicationContext);
+        }
+    }
+
+    public static Boolean savePushes(JSONArray data, Context context) {
+
+        FileOutputStream fos = null;
+        Boolean result = false;
+
+        try {
+            fos = context.openFileOutput(FILENAME, Context.MODE_PRIVATE);
+            String data_string = data.toString();
+            fos.write(data_string.getBytes());
+
+            Log.d(LOG_TAG, "Saving pushes: SUCCESS");
+            result = true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+
+            try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+        return result;
+    }
+
+    public static JSONArray readPushes(Context context) {
+
+        JSONArray result = new JSONArray();
+        FileInputStream fis = null;
+
+        try {
+            fis = context.openFileInput(FILENAME);
+            byte[] buffer = new byte[fis.available()];
+            fis.read(buffer);
+
+            String data_json = new String(buffer);
+            result = new JSONArray(data_json);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } finally {
+
+            try {
+                fis.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return result;
     }
 
     private void writeStream(OutputStream out, Hashtable<String, String> requestData) {

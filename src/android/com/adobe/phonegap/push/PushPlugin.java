@@ -218,9 +218,9 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
                     }
                 }
             });
-        } else if (UNSUBSCRIBE.equals(action)){
+        } else if (UNSUBSCRIBE.equals(action)) {
             // un-subscribing for a topic
-            cordova.getThreadPool().execute(new Runnable(){
+            cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
                     try {
                         String topic = data.getString(0);
@@ -231,6 +231,18 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
                     } catch (IOException e) {
                         callbackContext.error(e.getMessage());
                     }
+                }
+            });
+        } else if ("loadPushes".equals(action)) {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    loadPushes(callbackContext);
+                }
+            });
+        } else if ("savePushes".equals(action)) {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    savePushes(data, callbackContext);
                 }
             });
         } else {
@@ -325,7 +337,7 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
     *  when	    topic name = 'my-topic'
     *  then	    topic path = '/topics/my-topic'
     *
-    * @param    String  topic The topic name
+    * @param  String  topic The topic name
     * @return           The topic path
     */
     private String getTopicPath(String topic) {
@@ -466,5 +478,28 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
 
     protected static void setRegistrationID(String token) {
         registration_id = token;
+    }
+
+
+    //vanso
+
+    private void loadPushes(CallbackContext callback) {
+        JSONArray pushes = GCMIntentService.readPushes(getApplicationContext());
+        callback.success(pushes);
+    }
+
+    private void savePushes(JSONArray data, CallbackContext callback) {
+        try {
+            JSONArray pushes = data.getJSONArray(0);
+
+            if (GCMIntentService.savePushes(pushes, getApplicationContext())) {
+                callback.success("Saving pushes: success");
+            } else {
+                callback.error("Saving pushes: failed");
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            callback.error("Saving pushes: failed");
+        }
     }
 }
