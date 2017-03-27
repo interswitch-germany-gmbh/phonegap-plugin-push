@@ -136,8 +136,6 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
 
                 // Send receipt to the RTCP
                 try {
-
-
                     String key_hardware = "hardware_id";
                     String key_app = "app_id";
                     String key_secret = "secret";
@@ -151,16 +149,13 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     // getting push id
                     String app_data = extras.getString("app_data");
                     JSONObject joAppData = new JSONObject(app_data);
-
-                    Log.d(LOG_TAG, "extras: " + extras);
-
                     String push_id = joAppData.getString(key_push);
 
                     String push_secret = preferences.getString(key_secret, "no secret yet");
                     String urlReceipt = preferences.getString(key_url, "nor url yet");
 
                     requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
-                    requestData.put(key_push, push_id);
+                    requestData.put(key_push, "[" + push_id + "]");
 
                     requestData.put(key_type, "received");
 
