@@ -157,13 +157,10 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
                     requestData.put(key_push, "[" + push_id + "]");
 
-                    requestData.put(key_type, "received");
-
                     // signatureToken
                     String hashParams = "hardware_id=" + requestData.get(key_hardware) + "&";
-                    hashParams += "push_id=" + push_id + "&";
-                    hashParams += "time=" + requestData.get(key_time) + "&";
-                    hashParams += "type=" + requestData.get(key_type);
+                    hashParams += "push_id=" + requestData.get(key_push) + "&";
+                    hashParams += "time=" + requestData.get(key_time);
 
                     String hashUrl = urlReceipt + hashParams;
                     String urlParam = hashUrl + requestData.get(key_time);
@@ -176,7 +173,6 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
 
                     String charset = "UTF-8";
                     URL url = new URL(urlReceipt.replace("?", ""));
-                    JSONObject result = null;
 
                     HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
                     urlConnection.setConnectTimeout(15000);
@@ -196,7 +192,7 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     try {
                         if (urlConnection.getResponseCode() == 200 || urlConnection.getResponseCode() == 201) {
                             InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                            result = new JSONObject(getStringFromInputStream(in));
+                            JSONObject result = new JSONObject(getStringFromInputStream(in));
                             Log.i(LOG_TAG, "Sending Receipt: result: " + result);
                         } else {
                             Log.e(LOG_TAG, "Sending Receipt: request error: " + urlConnection.getResponseCode());
