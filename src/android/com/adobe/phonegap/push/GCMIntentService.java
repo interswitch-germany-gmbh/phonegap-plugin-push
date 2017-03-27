@@ -133,15 +133,13 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
 
                 showNotificationIfPossible(applicationContext, extras);
 
-
                 // Send receipt to the RTCP
                 try {
                     String key_hardware = "hardware_id";
                     String key_app = "app_id";
-                    String key_secret = "secret";
+//                    String key_secret = "secret";
                     String key_push = "push_id";
                     String key_url = "url_receipt";
-                    String key_type = "type";
 
                     // load data from preferences
                     SharedPreferences preferences = getSharedPreferences("APP_PUSH_DATA", 0);
@@ -151,25 +149,26 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     JSONObject joAppData = new JSONObject(app_data);
                     String push_id = joAppData.getString(key_push);
 
-                    String push_secret = preferences.getString(key_secret, "no secret yet");
+//                    String push_secret = preferences.getString(key_secret, "no secret yet");
                     String urlReceipt = preferences.getString(key_url, "nor url yet");
 
                     requestData.put(key_hardware, preferences.getString(key_hardware, "no uuid yet"));
-                    requestData.put(key_push, "[" + push_id + "]");
+                    requestData.put(key_push, push_id);
 
                     // signatureToken
-                    String hashParams = "hardware_id=" + requestData.get(key_hardware) + "&";
-                    hashParams += "push_id=" + requestData.get(key_push) + "&";
-                    hashParams += "time=" + requestData.get(key_time);
+//                    String hashParams = "hardware_id=" + requestData.get(key_hardware) + "&";
+//                    hashParams += "time=" + requestData.get(key_time) + "&";
+//                    hashParams += "push_id=" + requestData.get(key_push);
 
-                    String hashUrl = urlReceipt + hashParams;
-                    String urlParam = hashUrl + requestData.get(key_time);
-
-                    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-                    SecretKeySpec keySpec = new SecretKeySpec(push_secret.getBytes(), "HmacSHA256");
-                    sha256_HMAC.init(keySpec);
-                    byte[] encoded = sha256_HMAC.doFinal(urlParam.getBytes());
-                    String signatureToken = encoded.toString();
+                    String query = createQuery(requestData);
+                    Log.i(LOG_TAG, "query: " + query);
+//                    String urlParam = urlReceipt + query + requestData.get(key_time);
+//
+//                    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+//                    SecretKeySpec keySpec = new SecretKeySpec(push_secret.getBytes(), "HmacSHA256");
+//                    sha256_HMAC.init(keySpec);
+//                    byte[] encoded = sha256_HMAC.doFinal(urlParam.getBytes());
+//                    String signatureToken = encoded.toString();
 
                     String charset = "UTF-8";
                     URL url = new URL(urlReceipt.replace("?", ""));
@@ -182,10 +181,10 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
                     //urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=\"" + charset + "\"");
                     urlConnection.setRequestProperty("AUTH-APP-ID", preferences.getString(key_app, "no app id yet"));
                     urlConnection.setRequestProperty("AUTH-TIMESTAMP", requestData.get(key_time));
-                    urlConnection.setRequestProperty("AUTH-SIGNATURE", signatureToken);
+//                    urlConnection.setRequestProperty("AUTH-SIGNATURE", signatureToken);
 
                     OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
-                    writeStream(out, requestData);
+                    writeStream(out, query);
                     out.flush();
                     out.close();
 
@@ -289,20 +288,23 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
         return result;
     }
 
-    private void writeStream(OutputStream out, Hashtable<String, String> requestData) {
-        String body = "";
-        Set<String> keys = requestData.keySet();
-        for(String key: keys) {
-            body += key + "=" + requestData.get(key) + "&";
-        }
-        body = body.substring(0, body.length() - 1);
+    private void writeStream(OutputStream out, String query) {
 
         try {
-            out.write(body.getBytes());
+            out.write(query.getBytes());
         } catch (IOException e) {
             Log.e(LOG_TAG, "ERROR: writeStream: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private String createQuery(Hashtable<String, String> requestData) {
+
+        Uri.Builder builder = new Uri.Builder();
+        for(String key: requestData.keySet()) {
+            builder.appendQueryParameter(key, requestData.get(key));
+        }
+        return builder.build().getQuery();
     }
 
 
