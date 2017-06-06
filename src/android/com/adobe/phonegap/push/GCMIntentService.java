@@ -54,11 +54,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.Set;
-import java.util.ArrayList;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.HttpsURLConnection;
 
 @SuppressLint("NewApi")
@@ -212,8 +208,12 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
             // read saved pushes
             JSONArray saved_pushes = readPushes(applicationContext);
             ArrayList<JSONObject> temp_pushes = new ArrayList();
-            for (JSONObject jo : saved_pushes)
-                temp_pushes.add(jo);
+            try {
+                for (int i = 0; i < saved_pushes.length(); i++)
+                    temp_pushes.add(saved_pushes.getJSONObject(i));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
 
             while (temp_pushes.size() >= 10) {
                 temp_pushes.remove(temp_pushes.size() - 1);
