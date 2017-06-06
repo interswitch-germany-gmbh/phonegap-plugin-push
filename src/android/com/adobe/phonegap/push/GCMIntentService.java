@@ -218,7 +218,7 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
             String push_data = "{date:\""+ requestData.get(key_time) + "\",status:" + state + ",message:\"" + extras.getString("message") + "\",app_data:" + extras.getString("app_data") + "}";
             try {
                 JSONObject push = new JSONObject(push_data);
-                saved_pushes.put(push);
+                saved_pushes.put(0, push);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
