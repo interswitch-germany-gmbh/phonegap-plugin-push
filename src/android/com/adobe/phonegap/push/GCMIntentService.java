@@ -214,8 +214,8 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
             for (JSONObject jo : saved_pushes)
                 temp_pushes.add(jo);
 
-            while (temp_pushes.length() >= 10) {
-                temp_pushes.remove(0);
+            while (temp_pushes.size() >= 10) {
+                temp_pushes.remove(temp_pushes.size() - 1);
             }
 
             // save the push data
