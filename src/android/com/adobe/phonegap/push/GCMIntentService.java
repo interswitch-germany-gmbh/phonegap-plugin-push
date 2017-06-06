@@ -210,18 +210,27 @@ public class GCMIntentService extends GcmListenerService implements PushConstant
 
             // read saved pushes
             JSONArray saved_pushes = readPushes(applicationContext);
-            while (saved_pushes.length() >= 10) {
-                saved_pushes.remove(0);
+            ArrayList<JSONObject> temp_pushes = new ArrayList();
+            for (JSONObject jo : saved_pushes)
+                temp_pushes.add(jo);
+
+            while (temp_pushes.length() >= 10) {
+                temp_pushes.remove(0);
             }
 
             // save the push data
             String push_data = "{date:\""+ requestData.get(key_time) + "\",status:" + state + ",message:\"" + extras.getString("message") + "\",app_data:" + extras.getString("app_data") + "}";
             try {
                 JSONObject push = new JSONObject(push_data);
-                saved_pushes.put(0, push);
+                temp_pushes.add(0, push);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
+
+            // convert to JSONArray
+            saved_pushes = new JSONArray();
+            for (JSONObject jo : temp_pushes)
+                saved_pushes.put(jo);
 
             Log.d(LOG_TAG, "saved_pushes: " + saved_pushes);
             savePushes(saved_pushes, applicationContext);
