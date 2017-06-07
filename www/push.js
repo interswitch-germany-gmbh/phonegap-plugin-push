@@ -334,6 +334,16 @@ PushNotification.prototype.savePushes = function(opt) {
     exec(opt.success, opt.error, 'PushNotification', 'savePushes', [opt.data]);
 }
 
+PushNotification.prototype.checkState = function(opt) {
+    if (typeof(opt.success) != "function") {
+        opt.success = function() {};
+    }
+    if (typeof(opt.error) != "function") {
+        opt.error = function() {};
+    }
+    exec(opt.success, opt.error, 'PushNotification', 'checkState', []);
+}
+
 /*!
  * Push Notification Plugin.
  */

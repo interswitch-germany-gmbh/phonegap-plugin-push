@@ -245,6 +245,10 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
                     savePushes(data, callbackContext);
                 }
             });
+        } else if ("savePushe".equals(action)) {
+            cordova.getThreadPool().execute(() -> {
+                    checkState(callbackContext);
+            })
         } else {
             Log.e(LOG_TAG, "Invalid action : " + action);
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
@@ -501,5 +505,9 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
             e.printStackTrace();
             callback.error("Saving pushes: failed");
         }
+    }
+
+    private void checkState(CallbackContext callback) {
+        
     }
 }
