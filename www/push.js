@@ -333,12 +333,12 @@ PushNotification.prototype.savePushes = function(opt) {
     exec(opt.success, opt.error, 'PushNotification', 'savePushes', [opt.data]);
 }
 
-PushNotification.prototype.checkState = function(opt) {
+PushNotification.prototype.state = function(opt) {
     if (typeof(opt.success) != "function") {
-        opt.success = function() {};
+        opt.success = function(state) {console.log('Push notifications are ' + state);};
     }
     if (typeof(opt.error) != "function") {
-        opt.error = function() {};
+        opt.error = function(error) {console.log(error);};
     }
     exec(opt.success, opt.error, 'PushNotification', 'checkState', []);
 }
