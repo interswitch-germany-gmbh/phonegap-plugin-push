@@ -2,17 +2,17 @@
 /* globals window */
 
 /*!
- * Module dependencies.
- */
+* Module dependencies.
+*/
 
 var exec = cordova.require('cordova/exec');
 
 /**
- * PushNotification constructor.
- *
- * @param {Object} options to initiate Push Notifications.
- * @return {PushNotification} instance that can be monitored and cancelled.
- */
+* PushNotification constructor.
+*
+* @param {Object} options to initiate Push Notifications.
+* @return {PushNotification} instance that can be monitored and cancelled.
+*/
 
 var PushNotification = function(options) {
     this._handlers = {
@@ -68,9 +68,8 @@ var PushNotification = function(options) {
 };
 
 /**
- * Unregister from push notifications
- */
-
+* Unregister from push notifications
+*/
 PushNotification.prototype.unregister = function(successCallback, errorCallback, options) {
     if (!errorCallback) {
         errorCallback = function() {};
@@ -102,12 +101,12 @@ PushNotification.prototype.unregister = function(successCallback, errorCallback,
 };
 
 /**
- * subscribe to a topic
- * @param   {String}      topic               topic to subscribe
- * @param   {Function}    successCallback     success callback
- * @param   {Function}    errorCallback       error callback
- * @return  {void}
- */
+* subscribe to a topic
+* @param   {String}      topic               topic to subscribe
+* @param   {Function}    successCallback     success callback
+* @param   {Function}    errorCallback       error callback
+* @return  {void}
+*/
 PushNotification.prototype.subscribe = function(topic, successCallback, errorCallback) {
     if (!errorCallback) {
         errorCallback = function() {};
@@ -127,12 +126,12 @@ PushNotification.prototype.subscribe = function(topic, successCallback, errorCal
 };
 
 /**
- * unsubscribe to a topic
- * @param   {String}      topic               topic to unsubscribe
- * @param   {Function}    successCallback     success callback
- * @param   {Function}    errorCallback       error callback
- * @return  {void}
- */
+* unsubscribe to a topic
+* @param   {String}      topic               topic to unsubscribe
+* @param   {Function}    successCallback     success callback
+* @param   {Function}    errorCallback       error callback
+* @return  {void}
+*/
 PushNotification.prototype.unsubscribe = function(topic, successCallback, errorCallback) {
     if (!errorCallback) {
         errorCallback = function() {};
@@ -152,8 +151,8 @@ PushNotification.prototype.unsubscribe = function(topic, successCallback, errorC
 };
 
 /**
- * Call this to set the application icon badge
- */
+* Call this to set the application icon badge
+*/
 
 PushNotification.prototype.setApplicationIconBadgeNumber = function(successCallback, errorCallback, badge) {
     if (!errorCallback) {
@@ -176,8 +175,8 @@ PushNotification.prototype.setApplicationIconBadgeNumber = function(successCallb
 };
 
 /**
- * Get the application icon badge
- */
+* Get the application icon badge
+*/
 
 PushNotification.prototype.getApplicationIconBadgeNumber = function(successCallback, errorCallback) {
     if (!errorCallback) {
@@ -198,8 +197,8 @@ PushNotification.prototype.getApplicationIconBadgeNumber = function(successCallb
 };
 
 /**
- * Get the application icon badge
- */
+* Get the application icon badge
+*/
 
 PushNotification.prototype.clearAllNotifications = function(successCallback, errorCallback) {
     if (!successCallback) {
@@ -223,17 +222,17 @@ PushNotification.prototype.clearAllNotifications = function(successCallback, err
 };
 
 /**
- * Listen for an event.
- *
- * Any event is supported, but the following are built-in:
- *
- *   - registration
- *   - notification
- *   - error
- *
- * @param {String} eventName to subscribe to.
- * @param {Function} callback triggered on the event.
- */
+* Listen for an event.
+*
+* Any event is supported, but the following are built-in:
+*
+*   - registration
+*   - notification
+*   - error
+*
+* @param {String} eventName to subscribe to.
+* @param {Function} callback triggered on the event.
+*/
 
 PushNotification.prototype.on = function(eventName, callback) {
     if (!this._handlers.hasOwnProperty(eventName)) {
@@ -243,11 +242,11 @@ PushNotification.prototype.on = function(eventName, callback) {
 };
 
 /**
- * Remove event listener.
- *
- * @param {String} eventName to match subscription.
- * @param {Function} handle function associated with event.
- */
+* Remove event listener.
+*
+* @param {String} eventName to match subscription.
+* @param {Function} handle function associated with event.
+*/
 
 PushNotification.prototype.off = function(eventName, handle) {
     if (this._handlers.hasOwnProperty(eventName)) {
@@ -259,15 +258,15 @@ PushNotification.prototype.off = function(eventName, handle) {
 };
 
 /**
- * Emit an event.
- *
- * This is intended for internal use only.
- *
- * @param {String} eventName is the event to trigger.
- * @param {*} all arguments are passed to the event listeners.
- *
- * @return {Boolean} is true when the event is triggered otherwise false.
- */
+* Emit an event.
+*
+* This is intended for internal use only.
+*
+* @param {String} eventName is the event to trigger.
+* @param {*} all arguments are passed to the event listeners.
+*
+* @return {Boolean} is true when the event is triggered otherwise false.
+*/
 
 PushNotification.prototype.emit = function() {
     var args = Array.prototype.slice.call(arguments);
@@ -345,19 +344,19 @@ PushNotification.prototype.checkState = function(opt) {
 }
 
 /*!
- * Push Notification Plugin.
- */
+* Push Notification Plugin.
+*/
 
 module.exports = {
     /**
-     * Register for Push Notifications.
-     *
-     * This method will instantiate a new copy of the PushNotification object
-     * and start the registration process.
-     *
-     * @param {Object} options
-     * @return {PushNotification} instance
-     */
+    * Register for Push Notifications.
+    *
+    * This method will instantiate a new copy of the PushNotification object
+    * and start the registration process.
+    *
+    * @param {Object} options
+    * @return {PushNotification} instance
+    */
 
     init: function(options) {
         return new PushNotification(options);
@@ -368,12 +367,12 @@ module.exports = {
     },
 
     /**
-     * PushNotification Object.
-     *
-     * Expose the PushNotification object for direct use
-     * and testing. Typically, you should use the
-     * .init helper method.
-     */
+    * PushNotification Object.
+    *
+    * Expose the PushNotification object for direct use
+    * and testing. Typically, you should use the
+    * .init helper method.
+    */
 
     PushNotification: PushNotification
 };
