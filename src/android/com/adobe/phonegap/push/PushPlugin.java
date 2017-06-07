@@ -3,7 +3,9 @@ package com.adobe.phonegap.push;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import com.google.android.gms.gcm.GcmPubSub;
@@ -35,6 +37,8 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
     private static CordovaWebView gWebView;
     private static List<Bundle> gCachedExtras = Collections.synchronizedList(new ArrayList<Bundle>());
     private static boolean gForeground = false;
+
+    private final boolean isKitkat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
     private static String registration_id = "";
 
@@ -245,7 +249,7 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
                     savePushes(data, callbackContext);
                 }
             });
-        } else if ("savePushe".equals(action)) {
+        } else if ("checkState".equals(action)) {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
                     checkState(callbackContext);
@@ -510,6 +514,17 @@ public class PushPlugin extends CordovaPlugin implements PushConstants {
     }
 
     private void checkState(CallbackContext callback) {
-        
+
+        if (isKitkat) {
+            NotificationManagerCompat manager = NotificationManagerCompat.from(cordova.getActivity());
+
+            if (manager.areNotificationsEnabled()) {
+                callback.success("enabled");
+            } else {
+                callback.success("disabled");
+            }
+        } else {
+            callback.error("Unable to check if notifications are enabled or disabled.");
+        }
     }
 }
