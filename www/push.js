@@ -321,7 +321,7 @@ PushNotification.prototype.loadPushes = function(success, error) {
         error = function() {};
     }
     exec(success, error, 'PushNotification', 'loadPushes', []);
-}
+};
 
 PushNotification.prototype.savePushes = function(opt) {
     if (typeof(opt.success) != "function") {
@@ -331,9 +331,9 @@ PushNotification.prototype.savePushes = function(opt) {
         opt.error = function() {};
     }
     exec(opt.success, opt.error, 'PushNotification', 'savePushes', [opt.data]);
-}
+};
 
-PushNotification.prototype.checkState = function(opt) {
+PushNotification.prototype.state = function(opt) {
     if (typeof(opt.success) != "function") {
         opt.success = function(state) {console.log('Push notifications are ' + state);};
     }
@@ -341,7 +341,7 @@ PushNotification.prototype.checkState = function(opt) {
         opt.error = function(error) {console.log(error);};
     }
     exec(opt.success, opt.error, 'PushNotification', 'checkState', []);
-}
+};
 
 /*!
 * Push Notification Plugin.
