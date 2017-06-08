@@ -337,9 +337,7 @@ PushNotification.prototype.status = function(success) {
     if (typeof(success) != "function") {
         opt.success = function(status) {console.log('Push notifications are ' + status);};
     }
-    var error = function(error) {console.log(error);};
-
-    exec(success, error, 'PushNotification', 'checkState', []);
+    exec(success, function(error) {console.log(error);}, 'PushNotification', 'checkState', []);
 };
 
 /*!
