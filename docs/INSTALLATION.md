@@ -4,6 +4,7 @@
 - [Android details](#android-details)
   - [Compilation](#compilation)
   - [Co-existing with Facebook Plugin](#co-existing-with-facebook-plugin)
+  - [Co-existing with plugins that use Firebase](#co-existing-with-plugins-that-use-firebase)
   - [Common errors](#common-errors)
     - [minSdkVersion === 14](#minsdkversion--14)
 	- [Multidex](#multidex)
@@ -17,52 +18,63 @@
   - [CocoaPods](#cocoapods)
     - [Common CocoaPod Installation issues](#common-cocoapod-installation-issues)
     - [CocoaPod Disk Space](#cocoapod-disk-space)
+    - [Library not found for -lPods-Appname](#library-not-found-for--lPods-Appname)
 - [Additional Resources](#additional-resources)
 
 ## Installation Requirements
 
 Plugin version | Cordova CLI | Cordova Android | Cordova iOS | CocoaPods
 ---- | ---- | ---- | ---- | ----
+2.0.0 | 6.4.0 | 6.2.1 | 4.4.0 | 1.1.1
 1.9.0 | 6.4.0 | 6.0.0 | 4.3.0 | 1.1.1
 1.8.0 | 3.6.3 | 4.0.0 | 4.1.0 | N/A
 
 To install from the command line:
 
 ```
-phonegap plugin add phonegap-plugin-push --variable SENDER_ID="XXXXXXX"
+phonegap plugin add phonegap-plugin-push
 ```
 or
 
 ```
-cordova plugin add phonegap-plugin-push --variable SENDER_ID="XXXXXXX"
+cordova plugin add phonegap-plugin-push
 ```
 
 It is also possible to install via repo url directly ( unstable )
 
 ```
-phonegap plugin add https://github.com/phonegap/phonegap-plugin-push --variable SENDER_ID="XXXXXXX"
+phonegap plugin add https://github.com/phonegap/phonegap-plugin-push
 ```
 
 or
 
 ```
-cordova plugin add https://github.com/phonegap/phonegap-plugin-push --variable SENDER_ID="XXXXXXX"
+cordova plugin add https://github.com/phonegap/phonegap-plugin-push
 ```
 
-Where the `XXXXXXX` in `SENDER_ID="XXXXXXX"` maps to the project number in the [Google Developer Console](https://www.google.ca/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwikqt3nyPjMAhXJ5iYKHR0qDcsQFggbMAA&url=https%3A%2F%2Fconsole.developers.google.com%2F&usg=AFQjCNF0eH059mv86nMIlRmfsf42kde-wA&sig2=BQ2BJpchw1CpGt87sk5p6w&bvm=bv.122852650,d.eWE). To find the project number login to the Google Developer Console, select your project and click the menu item in the screen shot below to display your project number.
+As of version 2.0.0 the SENDER_ID parameter has been removed at install time. Instead you put your google-services.json (Android) and/or GoogleService-Info.plist in the root folder of your project and then add the following lines into your config.xml.
 
-![zzns8](https://cloud.githubusercontent.com/assets/353180/15588897/2fc14db2-235e-11e6-9326-f97fe0ec15ab.png)
+In the platform tag for Android add the resource-file tag:
 
-If you are not creating an Android application you can put in anything for this value.
+```
+<platform name="android">
+  <resource-file src="google-services.json" target="google-services.json" />
+</platform>
+```
+
+In the platform tag for iOS add the resource-file tag:
+
+```
+<platform name="ios">
+  <resource-file src="GoogleService-Info.plist" />
+</platform>
+```
 
 > Note: if you are using Ionic you may need to specify the SENDER_ID variable in your package.json.
 
 ```
   "cordovaPlugins": [
     {
-      "variables": {
-        "SENDER_ID": "XXXXXXX"
-      },
       "locator": "phonegap-plugin-push"
     }
   ]
@@ -71,23 +83,17 @@ If you are not creating an Android application you can put in anything for this 
 > Note: You need to specify the SENDER_ID variable in your config.xml if you plan on installing/restoring plugins using the prepare method.  The prepare method will skip installing the plugin otherwise.
 
 ```
-<plugin name="phonegap-plugin-push" spec="1.6.0">
-    <param name="SENDER_ID" value="XXXXXXX" />
-</plugin>
+<plugin name="phonegap-plugin-push" spec="2.0.0" />
 ```
 
 ## Android details
 
 ### Compilation
 
-As of version 1.3.0 the plugin has been switched to using Gradle/Maven for building.
+As of version 2.0.0 the plugin has been switched to using pinned version of Gradle libraries. You will need to ensure that you have installed the following items through the Android SDK Manager:
 
-You will need to ensure that you have installed the following items through the Android SDK Manager:
-
-- Android Support Library version 23 or greater
-- Local Maven repository for Support Libraries (formerly Android Support Repository) version 20 or greater
-- Google Play Services version 27 or greater
-- Google Repository version 22 or greater
+- Android Support Library version 25.1.0
+- FirebaseMessaging Library version 9.8.0
 
 ![android support library](https://cloud.githubusercontent.com/assets/353180/10230226/0627931e-684a-11e5-9a6b-72d72997f655.png)
 
@@ -113,6 +119,30 @@ or
 ```
 cordova plugin add --save cordova-plugin-facebook4 --variable APP_ID="App ID" --variable APP_NAME="App Name"
 ```
+
+### Co-existing with plugins that use Firebase
+
+Problems may arise when push plugin is used along plugins that implement Firebase functionality (cordova-plugin-firebase-analytics, for example). Firebase uses `@string/google_app_id`, as does the push plugin, though the value format differs, causing problems like this: `Invalid google_app_id. Firebase Analytics disabled`.
+
+To make the two work together, you need to migrate your GCM project from Google console to Firebase console:
+
+1) In Firebase console - [import your existing GCM project](https://firebase.google.com/support/guides/google-android#migrate_your_console_project), don't create a new one.
+2) Set your `SENDER_ID` variable to match the id of your imported Firebase project. In case of cordova, your `config.xml` would look something like this:
+```xml
+<plugin name="phonegap-plugin-push" spec="~1.10.0">
+    <variable name="SENDER_ID" value="1:956432534015:android:df201d13e7261425" />
+</plugin>
+```
+3) In your JavaScript, when you init the PushPlugin, senderID remains the same format as before:
+```javascript
+PushNotification.init({
+    android: {
+        senderID: 956432534015
+    }
+});
+```
+
+*Note:* No changes on the back-end side are needed: [even though recommended](https://developers.google.com/cloud-messaging/android/android-migrate-fcm#update_server_endpoints), it isn't yet required and sending messages through GCM gateway should work just fine.
 
 ### Common errors
 
@@ -224,11 +254,21 @@ cordova platform update ios@4.0.0
 
 ### CocoaPods
 
-Required `cordova-cli` version: `6.4.0`
+Required `cordova-cli` minimum version: `6.4.0`
 
-Required `cordova-ios` version: `4.3.0`
+Required `cordova-ios` minimum version: `4.3.0`
 
-Version `1.9.0` (and above) of this plugin supports [CocoaPods](https://cocoapods.org) installation of the [Google Cloud Messaging](https://cocoapods.org/pods/GoogleCloudMessaging) library.
+Required `CocoaPods` minimum version: `1.0.1`
+
+
+To install CocoaPods, please follow the installation instructions [here](https://guides.cocoapods.org/using/getting-started). After installing CocoaPods, please run:
+
+    pod setup
+
+This will clone the required CocoaPods specs-repo into your home folder at `~/.cocoapods/repos`, so it might take a while. See the [CocoaPod Disk Space](#cocoapod-disk-space) section below for more information.
+
+
+Version `2.0.0` (and above) of this plugin supports [CocoaPods](https://cocoapods.org) installation of the [Firebase Cloud Messaging](https://cocoapods.org/pods/FirebaseMessaging) library.
 
 If you are installing this plugin using `npm`, and you are using version `6.1.0` or greater of the `cordova-cli`, it will automatically download the right version of this plugin for both your platform and cli.
 
@@ -256,7 +296,7 @@ Failed to install 'phonegap-plugin-push':Error: pod: Command failed with exit co
 Error: pod: Command failed with exit code 1
 ```
 
-Please run the command `pod repo update` and re-install the plugin.
+Please run the command `pod repo update` and re-install the plugin. You would only run `pod repo update` if you have the specs-repo already cloned on your machine through `pod setup`.
 
 ##### CocoaPod Disk Space
 
@@ -266,6 +306,17 @@ Running `pod setup` can take over 1 GB of disk space and that can take quite som
 git clone --verbose --depth=1 https://github.com/CocoaPods/Specs.git ~/.cocoapods/repos/master
 pod setup --verbose
 ```
+
+##### Library not found for -lPods-Appname
+
+If you open the app in Xcode and you get an error like:
+
+```
+ld: library not found for -lPods-Appname
+clang: error: linker command failed with exit code 1
+```
+
+Then you are opening the .xcodeproj file when you should be opening the .xcworkspace file.
 
 ## Additional Resources
 
@@ -294,6 +345,16 @@ var path = require('path');
 
 // no need to configure below
 var rootdir = process.argv[2];
+
+// Create res/raw directory so that copy does not fail.
+fs.mkdir('platforms/android/res/raw/',0777, function(err) {
+  if(err) {
+    console.error(err);
+  }
+  else {
+    console.log("the directory create success");
+  }
+});
 
 filestocopy.forEach(function(obj) {
     Object.keys(obj).forEach(function(key) {
