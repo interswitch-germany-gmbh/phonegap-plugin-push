@@ -113,9 +113,7 @@ var PushNotification = function() {
     }, 10);
   }
 
-  /**
-   * Unregister from push notifications
-   */
+
   _createClass(PushNotification, [
     {
       key: 'unregister',
@@ -430,8 +428,7 @@ var PushNotification = function() {
           console.log(error);
         }, 'PushNotification', 'checkState', []);
       }
-    }
-  ]);
+    }]);
 
 return PushNotification;
 }();
