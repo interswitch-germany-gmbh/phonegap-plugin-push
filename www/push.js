@@ -431,7 +431,7 @@ var PushNotification = function() {
         }, 'PushNotification', 'checkState', []);
       }
     }
-  ]);
+  }]);
 
 return PushNotification;
 }();
