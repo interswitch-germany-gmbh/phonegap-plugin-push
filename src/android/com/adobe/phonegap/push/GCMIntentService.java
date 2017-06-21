@@ -33,8 +33,7 @@ import android.text.Html;
 import android.text.Spanned;
 import android.util.Log;
 
-import com.google.firebase.messaging.FirebaseMessagingService;
-import com.google.firebase.messaging.RemoteMessage;
+import com.google.android.gms.gcm.GcmListenerService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -54,15 +53,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
 
 @SuppressLint("NewApi")
-public class FCMService extends FirebaseMessagingService implements PushConstants {
+public class GCMIntentService extends GcmListenerService implements PushConstants {
 
-    private static final String LOG_TAG = "Push_FCMService";
+    private static final String LOG_TAG = "PushPlugin_GCMIntentService";
     private static HashMap<Integer, ArrayList<String>> messageMap = new HashMap<Integer, ArrayList<String>>();
 
     private static final String FILENAME = "last_pushes";
@@ -82,20 +80,8 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     }
 
     @Override
-    public void onMessageReceived(RemoteMessage message){
-
-        String from = message.getFrom();
+    public void onMessageReceived(String from, Bundle extras) {
         Log.d(LOG_TAG, "onMessage - from: " + from);
-
-        Bundle extras = new Bundle();
-
-        if (message.getNotification()!=null) {
-            extras.putString(TITLE,message.getNotification().getTitle());
-            extras.putString(MESSAGE,message.getNotification().getBody());
-        }
-        for (Map.Entry<String, String> entry : message.getData().entrySet()) {
-            extras.putString(entry.getKey(), entry.getValue());
-        }
 
         if (extras != null && isAvailableSender(from)) {
             Context applicationContext = getApplicationContext();
@@ -430,7 +416,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     private String normalizeKey(String key, String messageKey, String titleKey) {
         if (key.equals(BODY) || key.equals(ALERT) || key.equals(MP_MESSAGE) || key.equals(GCM_NOTIFICATION_BODY) || key.equals(TWILIO_BODY) || key.equals(messageKey)) {
             return MESSAGE;
-        } else if (key.equals(TWILIO_TITLE) || key.equals(SUBJECT) || key.equals(titleKey)) {
+        } else if (key.equals(TWILIO_TITLE) || key.equals(titleKey)) {
             return TITLE;
         }else if (key.equals(MSGCNT) || key.equals(BADGE)) {
             return COUNT;
@@ -489,10 +475,6 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
                     } catch( JSONException e) {
                         Log.e(LOG_TAG, "normalizeExtras: JSON exception");
                     }
-                } else {
-                    String newKey = normalizeKey(key, messageKey, titleKey);
-                    Log.d(LOG_TAG, "replace key " + key + " with " + newKey);
-                    replaceKey(context, key, newKey, extras, newExtras);
                 }
             } else if (key.equals(("notification"))) {
                 Bundle value = extras.getBundle(key);
@@ -510,16 +492,11 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
                     newExtras.putString(newKey, valueData);
                 }
                 continue;
-            // In case we weren't working on the payload data node or the notification node,
-            // normalize the key.
-            // This allows to have "message" as the payload data key without colliding
-            // with the other "message" key (holding the body of the payload)
-            // See issue #1663
-            } else {
-                String newKey = normalizeKey(key, messageKey, titleKey);
-                Log.d(LOG_TAG, "replace key " + key + " with " + newKey);
-                replaceKey(context, key, newKey, extras, newExtras);
             }
+
+            String newKey = normalizeKey(key, messageKey, titleKey);
+            Log.d(LOG_TAG, "replace key " + key + " with " + newKey);
+            replaceKey(context, key, newKey, extras, newExtras);
 
         } // while
 
@@ -571,15 +548,15 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
             createNotification(context, extras);
         }
 
-        if(!PushPlugin.isActive() && "1".equals(forceStart)){
+		if(!PushPlugin.isActive() && "1".equals(forceStart)){
             Log.d(LOG_TAG, "app is not running but we should start it and put in background");
-            Intent intent = new Intent(this, PushHandlerActivity.class);
+			Intent intent = new Intent(this, PushHandlerActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.putExtra(PUSH_BUNDLE, extras);
-            intent.putExtra(START_IN_BACKGROUND, true);
+			intent.putExtra(START_IN_BACKGROUND, true);
             intent.putExtra(FOREGROUND, false);
             startActivity(intent);
-        } else if ("1".equals(contentAvailable)) {
+		} else if ("1".equals(contentAvailable)) {
             Log.d(LOG_TAG, "app is not running and content available true");
             Log.d(LOG_TAG, "send notification event");
             PushPlugin.sendExtras(extras);
@@ -613,7 +590,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
                         .setContentTitle(fromHtml(extras.getString(TITLE)))
                         .setTicker(fromHtml(extras.getString(TITLE)))
                         .setContentIntent(contentIntent)
-                        //.setDeleteIntent(deleteIntent)
+                        .setDeleteIntent(deleteIntent)
                         .setAutoCancel(true);
 
         SharedPreferences prefs = context.getSharedPreferences(PushPlugin.COM_ADOBE_PHONEGAP_PUSH, Context.MODE_PRIVATE);
@@ -968,10 +945,6 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     }
 
     private Bitmap getCircleBitmap(Bitmap bitmap) {
-        if (bitmap == null) {
-            return null;
-        }
-
         final Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
         final Canvas canvas = new Canvas(output);
         final int color = Color.RED;
