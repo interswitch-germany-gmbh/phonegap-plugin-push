@@ -9,7 +9,10 @@
   "keywords": [
     "ecosystem:cordova",
     "ecosystem:phonegap",
-    "cordova-android"
+    "cordova-ios",
+    "cordova-android",
+    "cordova-windows",
+    "cordova-browser"
   ],
   "homepage": "https://github.com/phonegap/phonegap-plugin-push",
   "moduleType": [],
